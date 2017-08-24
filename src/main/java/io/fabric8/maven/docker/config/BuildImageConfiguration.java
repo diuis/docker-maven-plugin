@@ -5,6 +5,9 @@ import java.io.Serializable;
 import java.util.*;
 
 import io.fabric8.maven.docker.util.*;
+import org.apache.maven.plugins.annotations.Parameter;
+
+import javax.annotation.Nonnull;
 
 /**
  * @author roland
@@ -12,149 +15,118 @@ import io.fabric8.maven.docker.util.*;
  */
 public class BuildImageConfiguration implements Serializable {
 
+    public static final String DEFAULT_FILTER = "${*}";
+    public static final String DEFAULT_CLEANUP = "try";
+
     /**
      * Directory holding an external Dockerfile which is used to build the
      * image. This Dockerfile will be enriched by the addition build configuration
-     *
-     * @parameter
      */
+    @Parameter
     private String dockerFileDir;
 
     /**
      * Path to a dockerfile to use. Its parent directory is used as build context (i.e. as <code>dockerFileDir</code>).
      * Multiple different Dockerfiles can be specified that way. If set overwrites a possibly givem
      * <code>dockerFileDir</code>
-     *
-     * @parameter
      */
+    @Parameter
     private String dockerFile;
 
     /**
-     * Path to a docker archive to load an image instead of building from scratch. Note only either dockerFile or
+     * Path to a docker archive to load an image instead of building from scratch.
+     * Note only either dockerFile/dockerFileDir or
      * dockerArchive can be used.
-     *
-     * @parameter
      */
+    @Parameter
     private String dockerArchive;
 
-    // Base Image name of the data image to use.
     /**
-     * @parameter
+     * How interpolation of a dockerfile should be performed
      */
+    @Parameter
+    private String filter = DEFAULT_FILTER;
+
+    /**
+     * Base Image
+     */
+    @Parameter
     private String from;
 
-    // Extended version for <from>
     /**
-     * @parameter
+     * Extended version for <from>
      */
+    @Parameter
     private Map<String, String> fromExt;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private String registry;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private String maintainer;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private List<String> ports;
 
     /**
      * RUN Commands within Build/Image
-     * @parameter
      */
+    @Parameter
     private List<String> runCmds;
 
-    /**
-     * @parameter default-value="try"
-     */
-    private String cleanup = "try";
+    @Parameter
+    private String cleanup = DEFAULT_CLEANUP;
 
-    /**
-     * @parameter default-value="false"
-     */
+    @Parameter
     private boolean nocache = false;
 
-    /**
-     * @parameter default-value="false"
-     */
+    @Parameter
     private boolean optimise = false;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private List<String> volumes;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private List<String> tags;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Map<String, String> env;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Map<String, String> labels;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Map<String, String> args;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Arguments entryPoint;
 
-    /**
-     * @parameter
-     * @deprecated
-     */
+    @Parameter
+    @Deprecated
     private String command;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private String workdir;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Arguments cmd;
 
-    /** @parameter */
+    @Parameter
     private String user;
 
-    /** @parameter */
+    @Parameter
     private HealthCheckConfiguration healthCheck;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private AssemblyConfiguration assembly;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private boolean skip = false;
 
-    /**
-     * @parameter
-     */
-    private BuildTarArchiveCompression compression = BuildTarArchiveCompression.none;
+    @Parameter
+    private ArchiveCompression compression = ArchiveCompression.none;
 
-    /**
-     * @parameter
-     */
+    @Parameter
     private Map<String,String> buildOptions;
 
     // Path to Dockerfile to use, initialized lazily ....
@@ -172,6 +144,10 @@ public class BuildImageConfiguration implements Serializable {
 
     public File getDockerArchive() {
         return dockerArchiveFile;
+    }
+
+    public String getFilter() {
+        return filter;
     }
 
     public String getFrom() {
@@ -201,16 +177,19 @@ public class BuildImageConfiguration implements Serializable {
         return assembly;
     }
 
+    @Nonnull
     public List<String> getPorts() {
-        return ports;
+        return EnvUtil.removeEmptyEntries(ports);
     }
 
+    @Nonnull
     public List<String> getVolumes() {
-        return volumes != null ? volumes : Collections.<String>emptyList();
+        return EnvUtil.removeEmptyEntries(volumes);
     }
 
+    @Nonnull
     public List<String> getTags() {
-        return tags != null ? tags : Collections.<String>emptyList();
+        return EnvUtil.removeEmptyEntries(tags);
     }
 
     public Map<String, String> getEnv() {
@@ -246,7 +225,7 @@ public class BuildImageConfiguration implements Serializable {
         return skip;
     }
 
-    public BuildTarArchiveCompression getCompression() {
+    public ArchiveCompression getCompression() {
         return compression;
     }
 
@@ -258,8 +237,9 @@ public class BuildImageConfiguration implements Serializable {
         return entryPoint;
     }
 
+    @Nonnull
     public List<String> getRunCmds() {
-        return runCmds;
+        return EnvUtil.removeEmptyEntries(runCmds);
     }
 
     public String getUser() {
@@ -309,6 +289,15 @@ public class BuildImageConfiguration implements Serializable {
 
         public Builder dockerArchive(String archive) {
             config.dockerArchive = archive;
+            return this;
+        }
+
+        public Builder filter(String filter) {
+            if (filter == null) {
+                config.filter = DEFAULT_FILTER;
+            } else {
+                config.filter = filter;
+            }
             return this;
         }
 
@@ -389,15 +378,19 @@ public class BuildImageConfiguration implements Serializable {
         }
 
         public Builder cleanup(String cleanup) {
-            config.cleanup = cleanup;
+            if (cleanup == null) {
+                config.cleanup = DEFAULT_CLEANUP;
+            } else {
+                config.cleanup = cleanup;
+            }
             return this;
         }
 
         public Builder compression(String compression) {
             if (compression == null) {
-                config.compression = BuildTarArchiveCompression.none;
+                config.compression = ArchiveCompression.none;
             } else {
-                config.compression = BuildTarArchiveCompression.valueOf(compression);
+                config.compression = ArchiveCompression.valueOf(compression);
             }
             return this;
         }
@@ -510,6 +503,9 @@ public class BuildImageConfiguration implements Serializable {
             } else {
                 if (dFile.isAbsolute()) {
                     throw new IllegalArgumentException("<dockerFile> can not be absolute path if <dockerFileDir> also set.");
+                }
+                if (EnvUtil.isWindows() && !EnvUtil.isValidWindowsFileName(dockerFile)) {
+                    throw new IllegalArgumentException(String.format("Invalid Windows file name %s for <dockerFile>", dockerFile));
                 }
                 return new File(dockerFileDir, dockerFile);
             }

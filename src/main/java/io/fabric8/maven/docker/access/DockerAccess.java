@@ -2,13 +2,14 @@ package io.fabric8.maven.docker.access;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 import io.fabric8.maven.docker.access.log.LogCallback;
 import io.fabric8.maven.docker.access.log.LogGetHandle;
+import io.fabric8.maven.docker.config.ArchiveCompression;
 import io.fabric8.maven.docker.config.Arguments;
 import io.fabric8.maven.docker.log.LogOutputSpec;
 import io.fabric8.maven.docker.model.Container;
+import io.fabric8.maven.docker.model.InspectedContainer;
 import io.fabric8.maven.docker.model.Network;
 
 /**
@@ -35,7 +36,7 @@ public interface DockerAccess {
      * @return <code>ContainerDetails<code> representing the container or null if none could be found
      * @throws DockerAccessException if the container could not be inspected
      */
-    Container getContainer(String containerIdOrName) throws DockerAccessException;
+    InspectedContainer getContainer(String containerIdOrName) throws DockerAccessException;
 
     /**
      * Check whether the given name exists as image at the docker daemon
@@ -213,6 +214,16 @@ public interface DockerAccess {
      * @throws DockerAccessException if an image cannot be removed
      */
     boolean removeImage(String image, boolean ... force) throws DockerAccessException;
+
+    /**
+     * Save an image to a tar file
+     *
+     * @param image image to save
+     * @param filename target filename
+     * @param compression compression to use for the archive
+     * @throws DockerAccessException if an image cannot be removed
+     */
+    void saveImage(String image, String filename, ArchiveCompression compression) throws DockerAccessException;
 
     /**
      * List all networks

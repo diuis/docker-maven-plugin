@@ -97,7 +97,7 @@ public class ImageConfiguration implements StartOrderResolver.Resolvable, Serial
 
     private void addLinks(RunImageConfiguration runConfig, List<String> ret) {
         // Custom networks can have circular links, no need to be considered for the starting order.
-        if (runConfig.getLinks() != null && !runConfig.getNetworkingConfig().isCustomNetwork()) {
+        if (!runConfig.getNetworkingConfig().isCustomNetwork()) {
             for (String[] link : EnvUtil.splitOnLastColon(runConfig.getLinks())) {
                 ret.add(link[0]);
             }
@@ -114,7 +114,7 @@ public class ImageConfiguration implements StartOrderResolver.Resolvable, Serial
 
     private void addDependsOn(RunImageConfiguration runConfig, List<String> ret) {
         // Only used in custom networks.
-        if (runConfig.getDependsOn() != null && runConfig.getNetworkingConfig().isCustomNetwork()) {
+        if (runConfig.getNetworkingConfig().isCustomNetwork()) {
             for (String link : runConfig.getDependsOn()) {
                 ret.add(link);
             }
@@ -129,7 +129,7 @@ public class ImageConfiguration implements StartOrderResolver.Resolvable, Serial
     }
 
     public String getDescription() {
-        return String.format("[%s] %s", name, (alias != null ? "\"" + alias + "\"" : "")).trim();
+        return String.format("[%s] %s", new ImageName(name).getFullName(), (alias != null ? "\"" + alias + "\"" : "")).trim();
     }
 
     public String getRegistry() {

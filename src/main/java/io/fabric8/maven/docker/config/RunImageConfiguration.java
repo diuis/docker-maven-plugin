@@ -1,7 +1,6 @@
 package io.fabric8.maven.docker.config;
 
 import java.io.Serializable;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +8,8 @@ import io.fabric8.maven.docker.util.DeepCopy;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import io.fabric8.maven.docker.util.EnvUtil;
+
+import javax.annotation.Nonnull;
 
 /**
  * @author roland
@@ -189,8 +190,9 @@ public class RunImageConfiguration implements Serializable {
         return domainname;
     }
 
+    @Nonnull
     public List<String> getDependsOn() {
-        return dependsOn;
+        return EnvUtil.splitAtCommasAndTrim(dependsOn);
     }
 
     public String getUser() {
@@ -209,8 +211,9 @@ public class RunImageConfiguration implements Serializable {
         return memorySwap;
     }
 
+    @Nonnull
     public List<String> getPorts() {
-        return (ports != null) ? ports : Collections.<String>emptyList();
+        return EnvUtil.removeEmptyEntries(ports);
     }
 
     public Arguments getCmd() {
@@ -271,6 +274,7 @@ public class RunImageConfiguration implements Serializable {
         return volumes;
     }
 
+    @Nonnull
     public List<String> getLinks() {
         return EnvUtil.splitAtCommasAndTrim(links);
     }

@@ -38,6 +38,8 @@ public class WaitConfiguration implements Serializable {
     @Parameter
     private TcpConfiguration tcp;
 
+    @Parameter boolean healthy;
+
     @Parameter
     private String log;
 
@@ -47,16 +49,21 @@ public class WaitConfiguration implements Serializable {
     @Parameter
     private int kill;
 
+    @Parameter
+    private Integer exit;
+
     public WaitConfiguration() {}
 
-    private WaitConfiguration(int time, ExecConfiguration exec, HttpConfiguration http, TcpConfiguration tcp, String log, int shutdown, int kill) {
+    private WaitConfiguration(int time, ExecConfiguration exec, HttpConfiguration http, TcpConfiguration tcp, boolean healthy, String log, int shutdown, int kill, Integer exit) {
         this.time = time;
         this.exec = exec;
         this.http = http;
         this.tcp = tcp;
+        this.healthy = healthy;
         this.log = log;
         this.shutdown = shutdown;
         this.kill = kill;
+        this.exit = exit;
     }
 
     public int getTime() {
@@ -79,6 +86,10 @@ public class WaitConfiguration implements Serializable {
         return tcp;
     }
 
+    public boolean getHealthy() {
+        return healthy;
+    }
+
     public String getLog() {
         return log;
     }
@@ -91,17 +102,23 @@ public class WaitConfiguration implements Serializable {
         return kill;
     }
 
+    public Integer getExit() {
+        return exit;
+    }
+
     // =============================================================================
 
     public static class Builder {
         private int time = 0,shutdown = 0, kill = 0;
         private String url,log,status;
+        boolean healthy;
         private String method;
         private String preStop;
         private String postStart;
         private List<Integer> tcpPorts;
         private String tcpHost;
         private TcpConfigMode tcpMode;
+        private Integer exit;
 
         public Builder time(int time) {
             this.time = time;
@@ -123,6 +140,11 @@ public class WaitConfiguration implements Serializable {
             return this;
         }
 
+        public Builder healthy(boolean healthy) {
+            this.healthy = healthy;
+            return this;
+        }
+
         public Builder log(String log) {
             this.log = log;
             return this;
@@ -135,6 +157,11 @@ public class WaitConfiguration implements Serializable {
 
         public Builder kill(int kill) {
             this.kill = kill;
+            return this;
+        }
+
+        public Builder exit(Integer exit) {
+            this.exit = exit;
             return this;
         }
 
@@ -161,9 +188,11 @@ public class WaitConfiguration implements Serializable {
                                          postStart != null || preStop != null ? new ExecConfiguration(postStart, preStop) : null,
                                          url != null ? new HttpConfiguration(url,method,status) : null,
                                          tcpPorts != null ? new TcpConfiguration(tcpMode, tcpHost, tcpPorts) : null,
+                                         healthy,
                                          log,
                                          shutdown,
-                                         kill);
+                                         kill,
+                                         exit);
         }
 
         public Builder preStop(String command) {

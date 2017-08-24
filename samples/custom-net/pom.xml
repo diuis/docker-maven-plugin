@@ -11,14 +11,14 @@
   -->
 
   <parent>
-    <groupId>io.fabric8</groupId>
+    <groupId>io.fabric8.dmp.samples</groupId>
     <artifactId>dmp-sample-parent</artifactId>
-    <version>0.20.0</version>
+    <version>0.22.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>dmp-custom-net</artifactId>
-  <version>0.20.0</version>
+  <version>0.22.0</version>
 
   <build>
     <plugins>
@@ -64,7 +64,7 @@
                   <alias>box2</alias>
                 </network>
                 <dependsOn>
-                  <dependsOn>box1</dependsOn>
+                  <container>box1</container>
                 </dependsOn>
                 <namingStrategy>none</namingStrategy>
                 <cmd>

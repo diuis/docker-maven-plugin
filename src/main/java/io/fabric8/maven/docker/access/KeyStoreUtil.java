@@ -4,12 +4,13 @@ import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.*;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Collection;
 
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 
 /**
  * Utility class for building up a keystore which can be used in
@@ -19,6 +20,12 @@ import org.bouncycastle.openssl.PEMParser;
  * @since 20.10.14
  */
 public class KeyStoreUtil {
+
+    static {
+        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
+            Security.addProvider(new BouncyCastleProvider());
+        }
+    }
 
     /**
      * Create a key stored holding certificates and secret keys from the given Docker key cert
@@ -41,18 +48,28 @@ public class KeyStoreUtil {
         return keyStore;
     }
 
-    public static PrivateKey loadPrivateKey(String keyPath) throws IOException, GeneralSecurityException {
-        PEMKeyPair keyPair = loadPEM(keyPath);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(keyPair.getPrivateKeyInfo().getEncoded());
-        return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
+    static PrivateKey loadPrivateKey(String keyPath) throws IOException, GeneralSecurityException {
+        try (Reader reader = new FileReader(keyPath);
+            PEMParser parser = new PEMParser(reader)) {
+            Object readObject;
+            while ((readObject = parser.readObject()) != null) {
+                if (readObject instanceof PEMKeyPair) {
+                    PEMKeyPair keyPair = (PEMKeyPair) readObject;
+                    return generatePrivateKey(keyPair.getPrivateKeyInfo());
+                } else if (readObject instanceof PrivateKeyInfo) {
+                    return generatePrivateKey((PrivateKeyInfo) readObject);
+                }
+            }
+        }
+        throw new GeneralSecurityException("Cannot generate private key from file: " + keyPath);
     }
 
-    private static PEMKeyPair loadPEM(String keyPath) throws IOException {
-        PEMParser parser = new PEMParser(new BufferedReader(new FileReader(keyPath)));
-        return (PEMKeyPair) parser.readObject();
+    private static PrivateKey generatePrivateKey(PrivateKeyInfo keyInfo) throws IOException {
+        return new JcaPEMKeyConverter().getPrivateKey(keyInfo);
     }
 
-    private static void addCA(KeyStore keyStore, String caPath) throws KeyStoreException, FileNotFoundException, CertificateException {
+    private static void addCA(KeyStore keyStore, String caPath) throws IOException, KeyStoreException,
+            CertificateException {
         for (Certificate cert : loadCertificates(caPath)) {
             X509Certificate crt = (X509Certificate) cert;
             String alias = crt.getSubjectX500Principal().getName();
@@ -60,9 +77,11 @@ public class KeyStoreUtil {
         }
     }
 
-    private static Certificate[] loadCertificates(String certPath) throws FileNotFoundException, CertificateException {
-        InputStream is = new FileInputStream(certPath);
-        Collection<? extends Certificate> certs = CertificateFactory.getInstance("X509").generateCertificates(is);
-        return new ArrayList<>(certs).toArray(new Certificate[certs.size()]);
+    private static Certificate[] loadCertificates(String certPath) throws IOException, CertificateException {
+        try (InputStream is = new FileInputStream(certPath)) {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X509");
+            Collection<? extends Certificate> certs = certificateFactory.generateCertificates(is);
+            return certs.toArray(new Certificate[certs.size()]);
+        }
     }
 }

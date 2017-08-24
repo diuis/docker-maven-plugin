@@ -64,7 +64,19 @@ public class PropertyConfigHandler implements ExternalConfigHandler {
                         .build());
     }
 
+    // Enable build config only when a `.from.`, `.dockerFile.`, or `.dockerFileDir.` is configured
+    private boolean buildConfigured(String prefix, Properties properties) {
+        return withPrefix(prefix, FROM, properties) != null ||
+                mapWithPrefix(prefix, FROM_EXT, properties) != null ||
+                withPrefix(prefix, DOCKER_FILE, properties) != null ||
+                withPrefix(prefix, DOCKER_FILE_DIR, properties) != null;
+    }
+
+
     private BuildImageConfiguration extractBuildConfiguration(String prefix, Properties properties) {
+        if (!buildConfigured(prefix, properties)) {
+            return null;
+        }
         return new BuildImageConfiguration.Builder()
                 .cmd(withPrefix(prefix, CMD, properties))
                 .cleanup(withPrefix(prefix, CLEANUP, properties))
@@ -89,6 +101,7 @@ public class PropertyConfigHandler implements ExternalConfigHandler {
                 .buildOptions(mapWithPrefix(prefix, BUILD_OPTIONS, properties))
                 .dockerFile(withPrefix(prefix, DOCKER_FILE, properties))
                 .dockerFileDir(withPrefix(prefix, DOCKER_FILE_DIR, properties))
+                .filter(withPrefix(prefix, FILTER, properties))
                 .user(withPrefix(prefix, USER, properties))
                 .healthCheck(extractHealthCheck(prefix, properties))
                 .build();
@@ -142,6 +155,7 @@ public class PropertyConfigHandler implements ExternalConfigHandler {
             .build();
     }
 
+    @SuppressWarnings("deprecation")
     private AssemblyConfiguration extractAssembly(String prefix, Properties properties) {
         return new AssemblyConfiguration.Builder()
                 .targetDir(withPrefix(prefix, ASSEMBLY_BASEDIR, properties))
@@ -235,6 +249,7 @@ public class PropertyConfigHandler implements ExternalConfigHandler {
                 .status(withPrefix(prefix, WAIT_HTTP_STATUS, properties))
                 .log(withPrefix(prefix, WAIT_LOG, properties))
                 .kill(asInt(withPrefix(prefix, WAIT_KILL, properties)))
+                .exit(asInteger(withPrefix(prefix, WAIT_EXIT, properties)))
                 .shutdown(asInt(withPrefix(prefix, WAIT_SHUTDOWN, properties)))
                 .tcpHost(withPrefix(prefix, WAIT_TCP_HOST, properties))
                 .tcpPorts(asIntList(listWithPrefix(prefix, WAIT_TCP_PORT, properties)))
@@ -271,6 +286,10 @@ public class PropertyConfigHandler implements ExternalConfigHandler {
 
     private int asInt(String s) {
         return s != null ? Integer.parseInt(s) : 0;
+    }
+
+    private Integer asInteger(String s) {
+        return s != null ? new Integer(s) : null;
     }
 
     private List<Integer> asIntList(List<String> strings) {

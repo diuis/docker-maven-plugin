@@ -6,7 +6,7 @@ import java.util.*;
 
 import io.fabric8.maven.docker.log.LogOutputSpec;
 import io.fabric8.maven.docker.util.Logger;
-import io.fabric8.maven.docker.util.WaitUtil;
+import io.fabric8.maven.docker.wait.WaitUtil;
 import io.fabric8.maven.docker.access.*;
 import io.fabric8.maven.docker.config.*;
 import io.fabric8.maven.docker.log.LogOutputSpecFactory;
@@ -76,7 +76,7 @@ public class RunServiceTest {
         givenAnImageConfiguration("redis3", "db2", "redisContainer2");
 
         givenAnImageConfiguration("parent", "parentName", "parentContainer");
-        givenAnImageConfiguration("otherName", "other:ro", "otherContainer");
+        givenAnImageConfiguration("other_name", "other:ro", "otherContainer");
 
 
         whenCreateContainerConfig("base");
@@ -213,7 +213,7 @@ public class RunServiceTest {
 
     private ImageConfiguration createImageConfig(int wait, int kill) {
         return new ImageConfiguration.Builder()
-                .name("testName")
+                .name("test_name")
                 .alias("testAlias")
                 .runConfig(new RunImageConfiguration.Builder()
                                    .wait(new WaitConfiguration.Builder()
@@ -226,7 +226,7 @@ public class RunServiceTest {
 
     private ImageConfiguration createImageConfigWithExecConfig(int wait) {
         return new ImageConfiguration.Builder()
-                .name("testName")
+                .name("test_name")
                 .alias("testAlias")
                 .runConfig(new RunImageConfiguration.Builder()
                                    .wait(new WaitConfiguration.Builder()
